@@ -279,6 +279,72 @@
 
     // Removed runViewer function
 
+    // --- Click-to-Spawn Sphere Feature ---
+
+    // Create a group to hold all marker spheres
+    const sphereGroup = new THREE.Group();
+    scene.add(sphereGroup); // Add the group to the scene
+
+    // Create a material and geometry for the spheres (small and white)
+    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const sphereGeometry = new THREE.SphereGeometry(0.02, 16, 16); // Small sphere
+
+    // Function to create a sphere at the hit position
+    function createSphereAtPosition(position) {
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.copy(position);
+      sphereGroup.add(sphere);
+      renderer.render(scene, camera); // Ensure the renderer renders the new sphere
+      console.log(`Sphere added at: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
+    }
+
+    // --- Raycaster Setup and Click Handling ---
+    // Remove the local raycaster declaration: const raycaster = new GaussianSplats3D.Raycaster();
+    const outHits = []; // Array to store intersection results
+    const renderDimensions = new THREE.Vector2(); // To store canvas dimensions
+
+    renderer.domElement.addEventListener('click', (event) => {
+      // Access the internal raycaster from the viewer instance
+      const internalRaycaster = dropInViewer?.viewer?.raycaster;
+
+      if (!internalRaycaster || !dropInViewer.viewer.splatMesh || dropInViewer.viewer.splatMesh.getSplatCount() === 0) {
+        console.log("No splats loaded, splat mesh not ready, or internal raycaster not found.");
+        return; // Don't raycast if no splats are loaded or raycaster isn't available
+      }
+
+      // Calculate mouse position in normalized device coordinates (-1 to +1) for raycaster
+      // Or use screen coordinates if the Raycaster expects that (check library docs if needed)
+      // GaussianSplats3D.Raycaster uses screen coordinates (offsetX, offsetY)
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mousePosition = new THREE.Vector2(
+        event.clientX - rect.left,
+        event.clientY - rect.top
+      );
+
+      // Get current render dimensions
+      renderer.getSize(renderDimensions);
+
+      // Reset hits array
+      outHits.length = 0;
+
+      // Set up the raycaster from the camera and mouse position
+      // Use the internal raycaster instance
+      internalRaycaster.setFromCameraAndScreenPosition(camera, mousePosition, renderDimensions);
+
+      // Perform the intersection test against the splat mesh
+      // Use the internal raycaster instance
+      internalRaycaster.intersectSplatMesh(dropInViewer.viewer.splatMesh, outHits);
+
+      // If we hit one or more splats
+      if (outHits.length > 0) {
+        // The first hit (outHits[0]) is usually the closest one
+        const hit = outHits[0];
+        createSphereAtPosition(hit.origin); // hit.origin is the intersection point in world space
+      } else {
+        console.log("No splat hit.");
+      }
+    });  
+
   </script>
 </body>
 </html>
