@@ -76,36 +76,6 @@
                     </td>
                 </tr>
                 <tr>
-                    <td class="w-2/5 text-right pr-2 py-1">Anti-aliased:</td>
-                    <td class="w-3/5 text-left py-1">
-                        <input type="checkbox" id="antialiased" class="w-4 h-4 p-0 m-0 align-middle"/>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="w-2/5 text-right pr-2 py-1">2D scene:</td>
-                    <td class="w-3/5 text-left py-1">
-                        <input type="checkbox" id="2dScene" class="w-4 h-4 p-0 m-0 align-middle"/>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="w-2/5 text-right pr-2 py-1">Camera up:</td>
-                    <td class="w-3/5 text-left py-1">
-                        <input id="cameraUp" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-24" value="0, 1, 0">
-                    </td>
-                </tr>
-                <tr>
-                    <td class="w-2/5 text-right pr-2 py-1">Camera position:</td>
-                    <td class="w-3/5 text-left py-1">
-                        <input id="cameraPosition" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-24" value="0, 0, 5">
-                    </td>
-                </tr>
-                <tr>
-                    <td class="w-2/5 text-right pr-2 py-1">Camera look-at:</td>
-                    <td class="w-3/5 text-left py-1">
-                        <input id="cameraLookAt" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-24" value="0, 0, 0">
-                    </td>
-                </tr>
-                <tr>
                     <td class="w-2/5 text-right pr-2 py-1">SH level:</td>
                     <td class="w-3/5 text-left py-1">
                         <input id="viewSphericalHarmonicsDegree" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-14" value="0">
@@ -114,7 +84,6 @@
                 </tr>
             </tbody>
         </table>
-        <span class="text-blue-800 border border-blue-300 bg-blue-100 hover:bg-blue-200 hover:border-blue-500 hover:text-blue-900 py-1 px-3 rounded-md shadow-md cursor-pointer inline-block mx-1" onclick="window.viewSplat()">View</span>
         <div id="view-loading-icon" class="loading-icon" style="display: none;"></div>
         <div id="viewStatus" class="mt-2 min-h-[1.2em] text-gray-700"></div>
         <div id="viewError" class="mt-2 min-h-[1.2em] text-red-600"></div>
@@ -145,10 +114,16 @@
     // Assign functions to window object to make them accessible from inline HTML event handlers
     window.onFileChange = function(arg, fileNameLabelID) {
       const fileNameLabel = document.getElementById(fileNameLabelID);
+      const viewFile = document.getElementById("viewFile"); // Get the file input element
+
       if (!arg || !arg.files || arg.files.length === 0) {
           fileNameLabel.innerHTML = '(No file chosen)';
+          setViewError(""); // Clear errors if file selection is cancelled
+          setViewStatus("");
           return;
       }
+
+      // Update file name label
       const url = arg.value;
       let lastForwardSlash = url.lastIndexOf('/');
       let lastBackwardSlash = url.lastIndexOf('\\');
@@ -156,52 +131,24 @@
       fileNameLabel.innerHTML = url.substring(lastSlash + 1);
       setViewError(""); // Clear errors when a new file is selected
       setViewStatus("");
-    }
 
-    window.viewSplat = function() {
-
-      const viewFile = document.getElementById("viewFile");
+      // --- Start processing immediately ---
       const alphaRemovalThreshold = parseInt(document.getElementById("alphaRemovalThresholdView").value);
-
-      let cameraUpStr = document.getElementById("cameraUp").value;
-      let cameraPositionStr = document.getElementById("cameraPosition").value;
-      let cameraLookAtStr = document.getElementById("cameraLookAt").value;
-      let antialiased = document.getElementById("antialiased").checked;
-      let sceneIs2D = document.getElementById("2dScene").checked;
       let sphericalHarmonicsDegree = parseInt(document.getElementById("viewSphericalHarmonicsDegree").value);
 
-      const parseVector3 = (str) => {
-          const arr = str.split(',').map(s => parseFloat(s.trim()));
-          return arr.length === 3 && arr.every(n => !isNaN(n)) ? arr : null;
-      };
+      // Default camera settings (can be adjusted if needed)
+      const cameraUpArray = [0, 1, 0];
+      const cameraPositionArray = [0, 0, 5];
+      const cameraLookAtArray = [0, 0, 0];
+      const antialiased = false; // Default value
+      const sceneIs2D = false; // Default value
 
-      const cameraUpArray = parseVector3(cameraUpStr);
-      const cameraPositionArray = parseVector3(cameraPositionStr);
-      const cameraLookAtArray = parseVector3(cameraLookAtStr);
-
-      if (!viewFile.files || viewFile.files.length === 0) {
-        setViewError("Please choose a file to view.");
-        return;
-      } else if (isNaN(alphaRemovalThreshold) || alphaRemovalThreshold < 0 || alphaRemovalThreshold > 255) {
+      // Validation
+      if (isNaN(alphaRemovalThreshold) || alphaRemovalThreshold < 0 || alphaRemovalThreshold > 255) {
         setViewError("Invalid alpha removal threshold (0-255).");
         return;
       } else if (isNaN(sphericalHarmonicsDegree) || sphericalHarmonicsDegree < 0 || sphericalHarmonicsDegree > 2) {
         setViewError("Invalid SH degree (0, 1, or 2).");
-        return;
-      }
-
-      if (!cameraUpArray) {
-        setViewError("Camera up must be 3 comma-separated numbers.");
-        return;
-      }
-
-      if (!cameraPositionArray) {
-        setViewError("Camera position must be 3 comma-separated numbers.");
-        return;
-      }
-
-      if (!cameraLookAtArray) {
-        setViewError("Camera look-at must be 3 comma-separated numbers.");
         return;
       }
 
@@ -222,6 +169,7 @@
           // Use setTimeout to allow UI update before potentially blocking parse/load
           setTimeout(() => {
               try {
+                // Pass default values for removed options
                 runViewer(fileReader.result, format, alphaRemovalThreshold, cameraUpArray, cameraPositionArray, cameraLookAtArray, antialiased, sceneIs2D, sphericalHarmonicsDegree);
               } catch (e) {
                 console.error(e);
@@ -266,14 +214,14 @@
 
     function runViewer(splatBufferData, format, alphaRemovalThreshold, cameraUpArray, cameraPositionArray, cameraLookAtArray, antialiased, sceneIs2D, sphericalHarmonicsDegree) {
       const viewerOptions = {
-        'cameraUp': cameraUpArray,
-        'initialCameraPosition': cameraPositionArray,
-        'initialCameraLookAt': cameraLookAtArray,
-        'halfPrecisionCovariancesOnGPU': false, // Keep false for broader compatibility
-        'antialiased': antialiased || false,
-        'splatRenderMode': sceneIs2D ? GaussianSplats3D.SplatRenderMode.TwoD : GaussianSplats3D.SplatRenderMode.ThreeD,
+        'cameraUp': cameraUpArray, // Use passed default
+        'initialCameraPosition': cameraPositionArray, // Use passed default
+        'initialCameraLookAt': cameraLookAtArray, // Use passed default
+        'halfPrecisionCovariancesOnGPU': false,
+        'antialiased': antialiased, // Use passed default
+        'splatRenderMode': sceneIs2D ? GaussianSplats3D.SplatRenderMode.TwoD : GaussianSplats3D.SplatRenderMode.ThreeD, // Use passed default
         'sphericalHarmonicsDegree': sphericalHarmonicsDegree,
-        'sharedMemoryForWorkers': false // Disable shared memory for simpler hosting (no CORS headers needed)
+        'sharedMemoryForWorkers': false
       };
       const splatBufferOptions = {
         'splatAlphaRemovalThreshold': alphaRemovalThreshold
