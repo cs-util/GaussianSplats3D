@@ -303,47 +303,69 @@
     const outHits = []; // Array to store intersection results
     const renderDimensions = new THREE.Vector2(); // To store canvas dimensions
 
-    renderer.domElement.addEventListener('click', (event) => {
-      // Access the internal raycaster from the viewer instance
-      const internalRaycaster = dropInViewer?.viewer?.raycaster;
+    // Variables to detect click vs drag
+    let isMouseDown = false;
+    const mouseDownPosition = new THREE.Vector2();
+    const mouseUpPosition = new THREE.Vector2();
+    const clickThreshold = 5; // Max pixels mouse can move to be considered a click
 
-      if (!internalRaycaster || !dropInViewer.viewer.splatMesh || dropInViewer.viewer.splatMesh.getSplatCount() === 0) {
-        console.log("No splats loaded, splat mesh not ready, or internal raycaster not found.");
-        return; // Don't raycast if no splats are loaded or raycaster isn't available
-      }
+    renderer.domElement.addEventListener('mousedown', (event) => {
+        isMouseDown = true;
+        mouseDownPosition.set(event.clientX, event.clientY);
+    });
 
-      // Calculate mouse position in normalized device coordinates (-1 to +1) for raycaster
-      // Or use screen coordinates if the Raycaster expects that (check library docs if needed)
-      // GaussianSplats3D.Raycaster uses screen coordinates (offsetX, offsetY)
-      const rect = renderer.domElement.getBoundingClientRect();
-      const mousePosition = new THREE.Vector2(
-        event.clientX - rect.left,
-        event.clientY - rect.top
-      );
+    // No need for mousemove listener if OrbitControls handles dragging
 
-      // Get current render dimensions
-      renderer.getSize(renderDimensions);
+    renderer.domElement.addEventListener('mouseup', (event) => {
+        if (!isMouseDown) return; // Exit if mouseup happened without a preceding mousedown in the canvas
+        isMouseDown = false;
 
-      // Reset hits array
-      outHits.length = 0;
+        mouseUpPosition.set(event.clientX, event.clientY);
 
-      // Set up the raycaster from the camera and mouse position
-      // Use the internal raycaster instance
-      internalRaycaster.setFromCameraAndScreenPosition(camera, mousePosition, renderDimensions);
+        // Calculate distance moved
+        const distance = mouseDownPosition.distanceTo(mouseUpPosition);
 
-      // Perform the intersection test against the splat mesh
-      // Use the internal raycaster instance
-      internalRaycaster.intersectSplatMesh(dropInViewer.viewer.splatMesh, outHits);
+        // Only proceed if it's a click (mouse moved less than threshold)
+        if (distance < clickThreshold) {
+            // Access the internal raycaster from the viewer instance
+            const internalRaycaster = dropInViewer?.viewer?.raycaster;
 
-      // If we hit one or more splats
-      if (outHits.length > 0) {
-        // The first hit (outHits[0]) is usually the closest one
-        const hit = outHits[0];
-        createSphereAtPosition(hit.origin); // hit.origin is the intersection point in world space
-      } else {
-        console.log("No splat hit.");
-      }
-    });  
+            if (!internalRaycaster || !dropInViewer.viewer.splatMesh || dropInViewer.viewer.splatMesh.getSplatCount() === 0) {
+                console.log("No splats loaded, splat mesh not ready, or internal raycaster not found.");
+                return; // Don't raycast if no splats are loaded or raycaster isn't available
+            }
+
+            // Calculate mouse position for raycasting using the mouseup coordinates
+            const rect = renderer.domElement.getBoundingClientRect();
+            const screenPosition = new THREE.Vector2(
+                event.clientX - rect.left,
+                event.clientY - rect.top
+            );
+
+            // Get current render dimensions
+            renderer.getSize(renderDimensions);
+
+            // Reset hits array
+            outHits.length = 0;
+
+            // Set up the raycaster from the camera and mouse position
+            internalRaycaster.setFromCameraAndScreenPosition(camera, screenPosition, renderDimensions);
+
+            // Perform the intersection test against the splat mesh
+            internalRaycaster.intersectSplatMesh(dropInViewer.viewer.splatMesh, outHits);
+
+            // If we hit one or more splats
+            if (outHits.length > 0) {
+                // The first hit (outHits[0]) is usually the closest one
+                const hit = outHits[0];
+                createSphereAtPosition(hit.origin); // hit.origin is the intersection point in world space
+            } else {
+                console.log("No splat hit.");
+            }
+        } else {
+            // console.log("Drag detected, not a click."); // Optional: log drag events
+        }
+    });
 
   </script>
 </body>
