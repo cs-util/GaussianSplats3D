@@ -56,7 +56,7 @@
 <body class="bg-gray-300 h-screen m-0 font-sans text-base">
   <div id="container" class="flex justify-center items-center h-full">
     <div id ="view-panel" class="p-5 text-gray-900 rounded-lg border border-gray-300 bg-gray-100 w-96 text-center shadow-lg">
-        <div class="text-lg font-bold text-gray-700 mb-4 block">View a <span class="file-ext">.ply</span>, <span class="file-ext">.ksplat</span>, or <span class="file-ext-small">.splat</span> file</div>
+        <div class="text-lg font-bold text-gray-700 mb-4 block">View a .ply, .ksplat, or .splat file</div>
         <table class="w-full text-left mb-4">
             <tbody>
                 <tr>
@@ -65,7 +65,7 @@
                             <span class="text-blue-800 border border-blue-300 bg-blue-100 hover:bg-blue-200 hover:border-blue-500 hover:text-blue-900 py-1 px-3 rounded-md shadow-md cursor-pointer mx-1">Choose file</span>
                             <input type="file" id="viewFile" class="hidden" onchange="window.onFileChange(this, 'viewFileName')">
                         </label>
-                        <span id="viewFileName" class="pl-3 text-gray-700">(No file chosen)</span>
+                        <span id="viewFileName" class="pl-3 text-gray-700"></span> <!-- Removed default text -->
                     </td>
                 </tr>
                 <tr>
@@ -84,9 +84,7 @@
                 </tr>
             </tbody>
         </table>
-        <div id="view-loading-icon" class="loading-icon" style="display: none;"></div>
-        <div id="viewStatus" class="mt-2 min-h-[1.2em] text-gray-700"></div>
-        <div id="viewError" class="mt-2 min-h-[1.2em] text-red-600"></div>
+        <!-- Removed loading icon, status, and error divs -->
     </div>
   </div>
 
@@ -117,9 +115,8 @@
       const viewFile = document.getElementById("viewFile"); // Get the file input element
 
       if (!arg || !arg.files || arg.files.length === 0) {
-          fileNameLabel.innerHTML = '(No file chosen)';
-          setViewError(""); // Clear errors if file selection is cancelled
-          setViewStatus("");
+          fileNameLabel.innerHTML = ''; // Clear label
+          // Removed setViewError/setViewStatus calls
           return;
       }
 
@@ -129,8 +126,7 @@
       let lastBackwardSlash = url.lastIndexOf('\\');
       const lastSlash = Math.max(lastForwardSlash, lastBackwardSlash);
       fileNameLabel.innerHTML = url.substring(lastSlash + 1);
-      setViewError(""); // Clear errors when a new file is selected
-      setViewStatus("");
+      // Removed setViewError/setViewStatus calls
 
       // --- Start processing immediately ---
       const alphaRemovalThreshold = parseInt(document.getElementById("alphaRemovalThresholdView").value);
@@ -145,10 +141,10 @@
 
       // Validation
       if (isNaN(alphaRemovalThreshold) || alphaRemovalThreshold < 0 || alphaRemovalThreshold > 255) {
-        setViewError("Invalid alpha removal threshold (0-255).");
+        console.error("Invalid alpha removal threshold (0-255)."); // Log error
         return;
       } else if (isNaN(sphericalHarmonicsDegree) || sphericalHarmonicsDegree < 0 || sphericalHarmonicsDegree > 2) {
-        setViewError("Invalid SH degree (0, 1, or 2).");
+        console.error("Invalid SH degree (0, 1, or 2)."); // Log error
         return;
       }
 
@@ -156,61 +152,42 @@
       const format = GaussianSplats3D.LoaderUtils.sceneFormatFromPath(viewFileName);
 
       if (format === undefined) {
-          setViewError("Could not determine file format. Ensure file has a .ply, .splat, or .ksplat extension.");
+          console.error("Could not determine file format. Ensure file has a .ply, .splat, or .ksplat extension."); // Log error
           return;
       }
 
-      setViewError(""); // Clear previous errors
+      // Removed setViewError call
 
       try {
         const fileReader = new FileReader();
         fileReader.onload = function(){
-          setViewStatus("Processing file...");
+          // Removed setViewStatus call
+          console.log("Processing file..."); // Log status
           // Use setTimeout to allow UI update before potentially blocking parse/load
           setTimeout(() => {
               try {
                 // Pass default values for removed options
                 runViewer(fileReader.result, format, alphaRemovalThreshold, cameraUpArray, cameraPositionArray, cameraLookAtArray, antialiased, sceneIs2D, sphericalHarmonicsDegree);
               } catch (e) {
-                console.error(e);
-                setViewError("Could not process scene: " + e.message);
-                setViewStatus("");
+                console.error("Could not process scene: " + e.message); // Log error
+                // Removed setViewError/setViewStatus calls
               }
           }, 10);
         }
         fileReader.onerror = function() {
-            setViewError("Error reading file.");
-            setViewStatus("");
+            console.error("Error reading file."); // Log error
+            // Removed setViewError/setViewStatus calls
         }
-        setViewStatus("Loading file...");
+        // Removed setViewStatus call
+        console.log("Loading file..."); // Log status
         fileReader.readAsArrayBuffer(viewFile.files[0]);
       } catch (e) {
-        console.error(e);
-        setViewError("Could not load scene: " + e.message);
-        setViewStatus("");
+        console.error("Could not load scene: " + e.message); // Log error
+        // Removed setViewError/setViewStatus calls
       }
     }
 
-    function setViewError(msg) {
-      setViewLoadingIconVisibility(false);
-      const statusEl = document.getElementById("viewStatus");
-      const errorEl = document.getElementById("viewError");
-      if (statusEl) statusEl.innerHTML = "";
-      if (errorEl) errorEl.innerHTML = msg;
-    }
-
-    function setViewStatus(msg) {
-      setViewLoadingIconVisibility(true);
-      const statusEl = document.getElementById("viewStatus");
-      const errorEl = document.getElementById("viewError");
-      if (errorEl) errorEl.innerHTML = "";
-      if (statusEl) statusEl.innerHTML = msg;
-    }
-
-    function setViewLoadingIconVisibility(visible) {
-       const icon = document.getElementById('view-loading-icon');
-       if (icon) icon.style.display = visible ? 'block' : 'none';
-    }
+    // Removed setViewError, setViewStatus, setViewLoadingIconVisibility functions
 
     function runViewer(splatBufferData, format, alphaRemovalThreshold, cameraUpArray, cameraPositionArray, cameraLookAtArray, antialiased, sceneIs2D, sphericalHarmonicsDegree) {
       const viewerOptions = {
@@ -240,20 +217,18 @@
         viewer.addSplatBuffers([splatBuffer], [splatBufferOptions])
         .then(() => {
             viewer.start(); // Start the viewer's render loop
-            setViewStatus(""); // Clear status on success
+            // Removed setViewStatus call
+            console.log("Viewer started."); // Log status
         })
         .catch((e) => {
-            console.error("Error adding splat buffers:", e);
-            setViewError("Error displaying scene: " + e.message);
-            // Restore UI if viewer fails
-            if (container) container.style.display = 'flex';
-             document.body.className = "bg-gray-300 h-screen m-0 font-sans text-base"; // Restore original body class
+            console.error("Error adding splat buffers:", e); // Log error
+            // Removed setViewError call
+            // Removed UI restoration logic as there's no status/error display
         });
       })
       .catch((e) => {
-          console.error("Error loading/parsing splat buffer:", e);
-          setViewError("Error processing file: " + e.message);
-          setViewStatus("");
+          console.error("Error loading/parsing splat buffer:", e); // Log error
+          // Removed setViewError/setViewStatus calls
       });
     }
 
