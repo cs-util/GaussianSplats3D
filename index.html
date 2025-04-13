@@ -6,102 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <title>3D Gaussian Splat Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      background-color: #CCD5DE;
-      height: 100vh;
-      margin: 0px;
-      font-family: "PT Sans", Arial, serif;
-      font-size: 12pt;
-    }
-
-    a {
-      text-decoration: none;
-      color: #3333CC;
-    }
-
-    a:hover {
-      text-decoration: underline;
-      color: #1111AA;
-    }
-
-    .container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-    }
-
-    .splat-panel {
-      padding: 20px;
-      color: #111111;
-      border-radius: 7px;
-      border: #bbbbbb 1px solid;
-      background-color: #f1f1f1;
-      width: 310px;
-      text-align: center;
-      box-shadow: 0px 2px 10px -1px rgb(0 0 0 / 39%);
-    }
-
-    .small-title {
-      font-size: 12pt;
-      font-weight: bold;
-      color: #333333;
-      margin-bottom: 15px;
-      display: block;
-    }
-
-    .button {
-      color: #3C5060;
-      border: #AEC5D7 1px solid;
-      background-color: #E5EAEE;
-      padding: 5px 10px;
-      border-radius: 3px;
-      filter: drop-shadow(2px 2px 3px #aaaaaa);
-      cursor: pointer;
-      display: inline-block;
-      margin: 5px;
-    }
-
-    .button:hover{
-      color: #1B242B;
-      background-color: #E4EFF9;
-      border-color: #4A5A67;
-    }
-
-    .text-input {
-      border: hsl(0, 0%, 67%) 1px solid;
-      background-color: #ffffff;
-      padding: 4px;
-      border-radius: 3px;
-    }
-
-     .checkbox-input {
-      width: 17px;
-      height: 17px;
-      padding: 0px;
-      margin: 0;
-      vertical-align: middle;
-    }
-
-    .file-ext, .file-ext-small {
-        border: #bababa 1px solid;
-        border-radius: 3px;
-        background-color: #e6e6e6;
-        padding: 1px 4px;
-        margin: 0 2px;
-        font-size: 10pt;
-    }
-
-    .valid-value-label {
-      color:#888888;
-      font-size: 10pt;
-    }
-
+    /* Minimal styles for loading icon if needed before Tailwind loads or for custom animations */
     .loading-icon {
         width: 35px;
         margin: 10px auto;
-        background: #324d70;
+        background: #324d70; /* Tailwind bg-blue-800 */
         aspect-ratio: 1;
         border-radius: 50%;
         --_m:
@@ -118,126 +29,95 @@
     @keyframes ply-load {
         to{transform: rotate(1turn)}
     }
-
-    #viewStatus, #viewError {
-        margin-top: 10px;
-        min-height: 1.2em;
+    .file-ext, .file-ext-small {
+        border: 1px solid #bababa; /* Tailwind border-gray-300 */
+        border-radius: 3px; /* Tailwind rounded-sm */
+        background-color: #e6e6e6; /* Tailwind bg-gray-200 */
+        padding: 1px 4px;
+        margin: 0 2px;
+        font-size: 0.875rem; /* Tailwind text-sm */
+        display: inline-block;
     }
-
-    #viewError {
-        color: #ff0000;
+    .file-ext-small {
+         background-color: #dfdfdf; /* Tailwind bg-gray-100 */
+         padding-bottom: 1px;
     }
-
-    #viewStatus {
-        color: #333333;
-    }
-
-    table {
-        width: 100%;
-        text-align: left;
-        margin-bottom: 15px;
-    }
-    td {
-        padding: 3px 0;
-    }
-    td:first-child {
-        width: 40%;
-        text-align: right;
-        padding-right: 5px;
-    }
-    td:last-child {
-        width: 60%;
-        text-align: left;
-    }
-
   </style>
   <script type="importmap">
     {
         "imports": {
-            "three": "./lib/three.module.js",
-            "gaussian-splats-3d": "./lib/gaussian-splats-3d.module.js"
+            "three": "./build/lib/three.module.js",
+            "gaussian-splats-3d": "./build/lib/gaussian-splats-3d.module.js"
         }
     }
   </script>
 </head>
 
-<body>
-  <div id="container" class="container">
-    <div id ="view-panel" class="splat-panel">
-        <div class="small-title">View a <span class="file-ext">.ply</span>, <span class="file-ext">.ksplat</span>, or <span class="file-ext-small">.splat</span> file</div>
-        <table>
-            <tr>
-            <td colspan="2" style="text-align: center;">
-                <label for="viewFile">
-                <span class="button">Choose file</span>
-                <input type="file" id="viewFile" style="display:none" onchange="window.onFileChange(this, 'viewFileName')">
-                </label>
-                <span id="viewFileName" style="padding-left:10px; color: #333333">(No file chosen)</span>
-            </td>
-            </tr>
-            <tr>
-            <td>
-                Minimum alpha:&nbsp;
-            </td>
-            <td>
-                <input id="alphaRemovalThresholdView" type="text" class="text-input" style="width: 50px" value="1"></input>
-                <span class="valid-value-label">(1-255)</span>
-            </td>
-            </tr>
-            <tr>
-              <td>
-                Anti-aliased:
-              </td>
-              <td style="text-align:left;">
-                <input type="checkbox" id="antialiased" class="checkbox-input"/>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                2D scene:
-              </td>
-              <td style="text-align:left;">
-                <input type="checkbox" id="2dScene" class="checkbox-input"/>
-              </td>
-            </tr>
-            <tr>
-            <td>
-                Camera up:&nbsp;
-            </td>
-            <td>
-                <input id="cameraUp" type="text" class="text-input" style="width: 90px" value="0, 1, 0"></input>
-            </td>
-            </tr>
-            <tr>
-            <td>
-                Camera position:&nbsp;
-            </td>
-            <td>
-                <input id="cameraPosition" type="text" class="text-input" style="width: 90px" value="0, 0, 5"></input>
-            </td>
-            </tr>
-            <tr>
-            <td>
-                Camera look-at:&nbsp;
-            </td>
-            <td>
-                <input id="cameraLookAt" type="text" class="text-input" style="width: 90px" value="0, 0, 0"></input>
-            </td>
-            </tr>
-            <tr>
-              <td>
-                  SH level:
-              </td>
-              <td>
-                  <input id="viewSphericalHarmonicsDegree" type="text" class="text-input" style="width: 50px" value="0"></input>
-                  <span class="valid-value-label">(0-2)</span>
-              </td>
-              </tr>
+<body class="bg-gray-300 h-screen m-0 font-sans text-base">
+  <div id="container" class="flex justify-center items-center h-full">
+    <div id ="view-panel" class="p-5 text-gray-900 rounded-lg border border-gray-300 bg-gray-100 w-96 text-center shadow-lg">
+        <div class="text-lg font-bold text-gray-700 mb-4 block">View a <span class="file-ext">.ply</span>, <span class="file-ext">.ksplat</span>, or <span class="file-ext-small">.splat</span> file</div>
+        <table class="w-full text-left mb-4">
+            <tbody>
+                <tr>
+                    <td colspan="2" class="text-center py-2">
+                        <label for="viewFile" class="inline-block">
+                            <span class="text-blue-800 border border-blue-300 bg-blue-100 hover:bg-blue-200 hover:border-blue-500 hover:text-blue-900 py-1 px-3 rounded-md shadow-md cursor-pointer mx-1">Choose file</span>
+                            <input type="file" id="viewFile" class="hidden" onchange="window.onFileChange(this, 'viewFileName')">
+                        </label>
+                        <span id="viewFileName" class="pl-3 text-gray-700">(No file chosen)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">Minimum alpha:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input id="alphaRemovalThresholdView" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-14" value="1">
+                        <span class="text-gray-500 text-xs">(1-255)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">Anti-aliased:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input type="checkbox" id="antialiased" class="w-4 h-4 p-0 m-0 align-middle"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">2D scene:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input type="checkbox" id="2dScene" class="w-4 h-4 p-0 m-0 align-middle"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">Camera up:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input id="cameraUp" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-24" value="0, 1, 0">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">Camera position:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input id="cameraPosition" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-24" value="0, 0, 5">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">Camera look-at:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input id="cameraLookAt" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-24" value="0, 0, 0">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">SH level:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input id="viewSphericalHarmonicsDegree" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-14" value="0">
+                        <span class="text-gray-500 text-xs">(0-2)</span>
+                    </td>
+                </tr>
+            </tbody>
         </table>
-        <span class="button" onclick="window.viewSplat()">View</span>
+        <span class="text-blue-800 border border-blue-300 bg-blue-100 hover:bg-blue-200 hover:border-blue-500 hover:text-blue-900 py-1 px-3 rounded-md shadow-md cursor-pointer inline-block mx-1" onclick="window.viewSplat()">View</span>
         <div id="view-loading-icon" class="loading-icon" style="display: none;"></div>
-        <div id="viewStatus"></div>
-        <div id="viewError"></div>
+        <div id="viewStatus" class="mt-2 min-h-[1.2em] text-gray-700"></div>
+        <div id="viewError" class="mt-2 min-h-[1.2em] text-red-600"></div>
     </div>
   </div>
 
@@ -249,10 +129,12 @@
     function fileBufferToSplatBuffer(fileBufferData, format, alphaRemovalThreshold, outSphericalHarmonicsDegree = 0) {
       if (format === GaussianSplats3D.SceneFormat.Ply) {
         // Use optimizeSplatData=false, compressionLevel=0 for direct viewing without extra processing
-        return GaussianSplats3D.PlyLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, 0, false, outSphericalHarmonicsDegree);
+        // Pass undefined for sectionSize, sceneCenter, blockSize, bucketSize as they are not needed here
+        return GaussianSplats3D.PlyLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, 0, false, outSphericalHarmonicsDegree, undefined, undefined, undefined, undefined);
       } else if (format === GaussianSplats3D.SceneFormat.Splat) {
          // Use optimizeSplatData=false, compressionLevel=0
-        return GaussianSplats3D.SplatLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, 0, false);
+         // Pass undefined for sectionSize, sceneCenter, blockSize, bucketSize
+        return GaussianSplats3D.SplatLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, 0, false, undefined, undefined, undefined, undefined);
       } else if (format === GaussianSplats3D.SceneFormat.KSplat) {
         return GaussianSplats3D.KSplatLoader.loadFromFileData(fileBufferData.data);
       } else {
@@ -260,8 +142,13 @@
       }
     }
 
+    // Assign functions to window object to make them accessible from inline HTML event handlers
     window.onFileChange = function(arg, fileNameLabelID) {
       const fileNameLabel = document.getElementById(fileNameLabelID);
+      if (!arg || !arg.files || arg.files.length === 0) {
+          fileNameLabel.innerHTML = '(No file chosen)';
+          return;
+      }
       const url = arg.value;
       let lastForwardSlash = url.lastIndexOf('/');
       let lastBackwardSlash = url.lastIndexOf('\\');
@@ -276,18 +163,23 @@
       const viewFile = document.getElementById("viewFile");
       const alphaRemovalThreshold = parseInt(document.getElementById("alphaRemovalThresholdView").value);
 
-      let cameraUpArray = document.getElementById("cameraUp").value;
-      let cameraPositionArray = document.getElementById("cameraPosition").value;
-      let cameraLookAtArray = document.getElementById("cameraLookAt").value;
+      let cameraUpStr = document.getElementById("cameraUp").value;
+      let cameraPositionStr = document.getElementById("cameraPosition").value;
+      let cameraLookAtStr = document.getElementById("cameraLookAt").value;
       let antialiased = document.getElementById("antialiased").checked;
       let sceneIs2D = document.getElementById("2dScene").checked;
       let sphericalHarmonicsDegree = parseInt(document.getElementById("viewSphericalHarmonicsDegree").value);
 
-      cameraUpArray = cameraUpArray.split(',').map(s => s.trim());
-      cameraPositionArray = cameraPositionArray.split(',').map(s => s.trim());
-      cameraLookAtArray = cameraLookAtArray.split(',').map(s => s.trim());
+      const parseVector3 = (str) => {
+          const arr = str.split(',').map(s => parseFloat(s.trim()));
+          return arr.length === 3 && arr.every(n => !isNaN(n)) ? arr : null;
+      };
 
-      if (!viewFile.files[0]) {
+      const cameraUpArray = parseVector3(cameraUpStr);
+      const cameraPositionArray = parseVector3(cameraPositionStr);
+      const cameraLookAtArray = parseVector3(cameraLookAtStr);
+
+      if (!viewFile.files || viewFile.files.length === 0) {
         setViewError("Please choose a file to view.");
         return;
       } else if (isNaN(alphaRemovalThreshold) || alphaRemovalThreshold < 0 || alphaRemovalThreshold > 255) {
@@ -298,24 +190,20 @@
         return;
       }
 
-      if (cameraUpArray.length !== 3 || cameraUpArray.some(isNaN)) {
+      if (!cameraUpArray) {
         setViewError("Camera up must be 3 comma-separated numbers.");
         return;
       }
 
-      if (cameraPositionArray.length !== 3 || cameraPositionArray.some(isNaN)) {
+      if (!cameraPositionArray) {
         setViewError("Camera position must be 3 comma-separated numbers.");
         return;
       }
 
-      if (cameraLookAtArray.length !== 3 || cameraLookAtArray.some(isNaN)) {
+      if (!cameraLookAtArray) {
         setViewError("Camera look-at must be 3 comma-separated numbers.");
         return;
       }
-
-      cameraUpArray = cameraUpArray.map(parseFloat);
-      cameraPositionArray = cameraPositionArray.map(parseFloat);
-      cameraLookAtArray = cameraLookAtArray.map(parseFloat);
 
       const viewFileName = viewFile.files[0].name.trim();
       const format = GaussianSplats3D.LoaderUtils.sceneFormatFromPath(viewFileName);
@@ -357,18 +245,23 @@
 
     function setViewError(msg) {
       setViewLoadingIconVisibility(false);
-      document.getElementById("viewStatus").innerHTML = "";
-      document.getElementById("viewError").innerHTML = msg;
+      const statusEl = document.getElementById("viewStatus");
+      const errorEl = document.getElementById("viewError");
+      if (statusEl) statusEl.innerHTML = "";
+      if (errorEl) errorEl.innerHTML = msg;
     }
 
     function setViewStatus(msg) {
       setViewLoadingIconVisibility(true);
-      document.getElementById("viewError").innerHTML = "";
-      document.getElementById("viewStatus").innerHTML = msg;
+      const statusEl = document.getElementById("viewStatus");
+      const errorEl = document.getElementById("viewError");
+      if (errorEl) errorEl.innerHTML = "";
+      if (statusEl) statusEl.innerHTML = msg;
     }
 
     function setViewLoadingIconVisibility(visible) {
-      document.getElementById('view-loading-icon').style.display = visible ? 'block' : 'none';
+       const icon = document.getElementById('view-loading-icon');
+       if (icon) icon.style.display = visible ? 'block' : 'none';
     }
 
     function runViewer(splatBufferData, format, alphaRemovalThreshold, cameraUpArray, cameraPositionArray, cameraLookAtArray, antialiased, sceneIs2D, sphericalHarmonicsDegree) {
@@ -391,8 +284,9 @@
 
       splatBufferPromise.then((splatBuffer) => {
         // Hide the initial UI panel and prepare for viewer
-        document.getElementById("container").style.display = 'none';
-        document.body.style.backgroundColor = "#000000"; // Set background for viewer
+        const container = document.getElementById("container");
+        if (container) container.style.display = 'none';
+        document.body.className = "bg-black h-screen m-0"; // Set background for viewer using Tailwind
 
         const viewer = new GaussianSplats3D.Viewer(viewerOptions);
         viewer.addSplatBuffers([splatBuffer], [splatBufferOptions])
@@ -404,8 +298,8 @@
             console.error("Error adding splat buffers:", e);
             setViewError("Error displaying scene: " + e.message);
             // Restore UI if viewer fails
-            document.getElementById("container").style.display = 'flex';
-            document.body.style.backgroundColor = "#CCD5DE";
+            if (container) container.style.display = 'flex';
+             document.body.className = "bg-gray-300 h-screen m-0 font-sans text-base"; // Restore original body class
         });
       })
       .catch((e) => {
@@ -414,6 +308,11 @@
           setViewStatus("");
       });
     }
+
+    // Initial setup if needed
+    document.addEventListener('DOMContentLoaded', (event) => {
+        // Any setup code that needs to run after the DOM is fully loaded
+    });
 
   </script>
 </body>
