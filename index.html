@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>3D Gaussian Splat Viewer</title>
+  <style>
+    body {
+      background-color: #CCD5DE;
+      height: 100vh;
+      margin: 0px;
+      font-family: "PT Sans", Arial, serif;
+      font-size: 12pt;
+    }
+
+    a {
+      text-decoration: none;
+      color: #3333CC;
+    }
+
+    a:hover {
+      text-decoration: underline;
+      color: #1111AA;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+
+    .splat-panel {
+      padding: 20px;
+      color: #111111;
+      border-radius: 7px;
+      border: #bbbbbb 1px solid;
+      background-color: #f1f1f1;
+      width: 310px;
+      text-align: center;
+      box-shadow: 0px 2px 10px -1px rgb(0 0 0 / 39%);
+    }
+
+    .small-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #333333;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .button {
+      color: #3C5060;
+      border: #AEC5D7 1px solid;
+      background-color: #E5EAEE;
+      padding: 5px 10px;
+      border-radius: 3px;
+      filter: drop-shadow(2px 2px 3px #aaaaaa);
+      cursor: pointer;
+      display: inline-block;
+      margin: 5px;
+    }
+
+    .button:hover{
+      color: #1B242B;
+      background-color: #E4EFF9;
+      border-color: #4A5A67;
+    }
+
+    .text-input {
+      border: hsl(0, 0%, 67%) 1px solid;
+      background-color: #ffffff;
+      padding: 4px;
+      border-radius: 3px;
+    }
+
+     .checkbox-input {
+      width: 17px;
+      height: 17px;
+      padding: 0px;
+      margin: 0;
+      vertical-align: middle;
+    }
+
+    .file-ext, .file-ext-small {
+        border: #bababa 1px solid;
+        border-radius: 3px;
+        background-color: #e6e6e6;
+        padding: 1px 4px;
+        margin: 0 2px;
+        font-size: 10pt;
+    }
+
+    .valid-value-label {
+      color:#888888;
+      font-size: 10pt;
+    }
+
+    .loading-icon {
+        width: 35px;
+        margin: 10px auto;
+        background: #324d70;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        --_m:
+            conic-gradient(#0000,#000),
+            linear-gradient(#000 0 0) content-box;
+        -webkit-mask: var(--_m);
+            mask: var(--_m);
+        -webkit-mask-composite: source-out;
+            mask-composite: subtract;
+        box-sizing: border-box;
+        animation: ply-load 1s linear infinite;
+    }
+
+    @keyframes ply-load {
+        to{transform: rotate(1turn)}
+    }
+
+    #viewStatus, #viewError {
+        margin-top: 10px;
+        min-height: 1.2em;
+    }
+
+    #viewError {
+        color: #ff0000;
+    }
+
+    #viewStatus {
+        color: #333333;
+    }
+
+    table {
+        width: 100%;
+        text-align: left;
+        margin-bottom: 15px;
+    }
+    td {
+        padding: 3px 0;
+    }
+    td:first-child {
+        width: 40%;
+        text-align: right;
+        padding-right: 5px;
+    }
+    td:last-child {
+        width: 60%;
+        text-align: left;
+    }
+
+  </style>
+  <script type="importmap">
+    {
+        "imports": {
+            "three": "./lib/three.module.js",
+            "gaussian-splats-3d": "./lib/gaussian-splats-3d.module.js"
+        }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="container" class="container">
+    <div id ="view-panel" class="splat-panel">
+        <div class="small-title">View a <span class="file-ext">.ply</span>, <span class="file-ext">.ksplat</span>, or <span class="file-ext-small">.splat</span> file</div>
+        <table>
+            <tr>
+            <td colspan="2" style="text-align: center;">
+                <label for="viewFile">
+                <span class="button">Choose file</span>
+                <input type="file" id="viewFile" style="display:none" onchange="window.onFileChange(this, 'viewFileName')">
+                </label>
+                <span id="viewFileName" style="padding-left:10px; color: #333333">(No file chosen)</span>
+            </td>
+            </tr>
+            <tr>
+            <td>
+                Minimum alpha:&nbsp;
+            </td>
+            <td>
+                <input id="alphaRemovalThresholdView" type="text" class="text-input" style="width: 50px" value="1"></input>
+                <span class="valid-value-label">(1-255)</span>
+            </td>
+            </tr>
+            <tr>
+              <td>
+                Anti-aliased:
+              </td>
+              <td style="text-align:left;">
+                <input type="checkbox" id="antialiased" class="checkbox-input"/>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                2D scene:
+              </td>
+              <td style="text-align:left;">
+                <input type="checkbox" id="2dScene" class="checkbox-input"/>
+              </td>
+            </tr>
+            <tr>
+            <td>
+                Camera up:&nbsp;
+            </td>
+            <td>
+                <input id="cameraUp" type="text" class="text-input" style="width: 90px" value="0, 1, 0"></input>
+            </td>
+            </tr>
+            <tr>
+            <td>
+                Camera position:&nbsp;
+            </td>
+            <td>
+                <input id="cameraPosition" type="text" class="text-input" style="width: 90px" value="0, 0, 5"></input>
+            </td>
+            </tr>
+            <tr>
+            <td>
+                Camera look-at:&nbsp;
+            </td>
+            <td>
+                <input id="cameraLookAt" type="text" class="text-input" style="width: 90px" value="0, 0, 0"></input>
+            </td>
+            </tr>
+            <tr>
+              <td>
+                  SH level:
+              </td>
+              <td>
+                  <input id="viewSphericalHarmonicsDegree" type="text" class="text-input" style="width: 50px" value="0"></input>
+                  <span class="valid-value-label">(0-2)</span>
+              </td>
+              </tr>
+        </table>
+        <span class="button" onclick="window.viewSplat()">View</span>
+        <div id="view-loading-icon" class="loading-icon" style="display: none;"></div>
+        <div id="viewStatus"></div>
+        <div id="viewError"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as GaussianSplats3D from 'gaussian-splats-3d';
+    import * as THREE from 'three';
+
+    // Simplified function assuming optimizeSplatData=false and compressionLevel=0 for direct viewing
+    function fileBufferToSplatBuffer(fileBufferData, format, alphaRemovalThreshold, outSphericalHarmonicsDegree = 0) {
+      if (format === GaussianSplats3D.SceneFormat.Ply) {
+        // Use optimizeSplatData=false, compressionLevel=0 for direct viewing without extra processing
+        return GaussianSplats3D.PlyLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, 0, false, outSphericalHarmonicsDegree);
+      } else if (format === GaussianSplats3D.SceneFormat.Splat) {
+         // Use optimizeSplatData=false, compressionLevel=0
+        return GaussianSplats3D.SplatLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, 0, false);
+      } else if (format === GaussianSplats3D.SceneFormat.KSplat) {
+        return GaussianSplats3D.KSplatLoader.loadFromFileData(fileBufferData.data);
+      } else {
+        return Promise.reject(`Unsupported file format: ${format}`);
+      }
+    }
+
+    window.onFileChange = function(arg, fileNameLabelID) {
+      const fileNameLabel = document.getElementById(fileNameLabelID);
+      const url = arg.value;
+      let lastForwardSlash = url.lastIndexOf('/');
+      let lastBackwardSlash = url.lastIndexOf('\\');
+      const lastSlash = Math.max(lastForwardSlash, lastBackwardSlash);
+      fileNameLabel.innerHTML = url.substring(lastSlash + 1);
+      setViewError(""); // Clear errors when a new file is selected
+      setViewStatus("");
+    }
+
+    window.viewSplat = function() {
+
+      const viewFile = document.getElementById("viewFile");
+      const alphaRemovalThreshold = parseInt(document.getElementById("alphaRemovalThresholdView").value);
+
+      let cameraUpArray = document.getElementById("cameraUp").value;
+      let cameraPositionArray = document.getElementById("cameraPosition").value;
+      let cameraLookAtArray = document.getElementById("cameraLookAt").value;
+      let antialiased = document.getElementById("antialiased").checked;
+      let sceneIs2D = document.getElementById("2dScene").checked;
+      let sphericalHarmonicsDegree = parseInt(document.getElementById("viewSphericalHarmonicsDegree").value);
+
+      cameraUpArray = cameraUpArray.split(',').map(s => s.trim());
+      cameraPositionArray = cameraPositionArray.split(',').map(s => s.trim());
+      cameraLookAtArray = cameraLookAtArray.split(',').map(s => s.trim());
+
+      if (!viewFile.files[0]) {
+        setViewError("Please choose a file to view.");
+        return;
+      } else if (isNaN(alphaRemovalThreshold) || alphaRemovalThreshold < 0 || alphaRemovalThreshold > 255) {
+        setViewError("Invalid alpha removal threshold (0-255).");
+        return;
+      } else if (isNaN(sphericalHarmonicsDegree) || sphericalHarmonicsDegree < 0 || sphericalHarmonicsDegree > 2) {
+        setViewError("Invalid SH degree (0, 1, or 2).");
+        return;
+      }
+
+      if (cameraUpArray.length !== 3 || cameraUpArray.some(isNaN)) {
+        setViewError("Camera up must be 3 comma-separated numbers.");
+        return;
+      }
+
+      if (cameraPositionArray.length !== 3 || cameraPositionArray.some(isNaN)) {
+        setViewError("Camera position must be 3 comma-separated numbers.");
+        return;
+      }
+
+      if (cameraLookAtArray.length !== 3 || cameraLookAtArray.some(isNaN)) {
+        setViewError("Camera look-at must be 3 comma-separated numbers.");
+        return;
+      }
+
+      cameraUpArray = cameraUpArray.map(parseFloat);
+      cameraPositionArray = cameraPositionArray.map(parseFloat);
+      cameraLookAtArray = cameraLookAtArray.map(parseFloat);
+
+      const viewFileName = viewFile.files[0].name.trim();
+      const format = GaussianSplats3D.LoaderUtils.sceneFormatFromPath(viewFileName);
+
+      if (format === undefined) {
+          setViewError("Could not determine file format. Ensure file has a .ply, .splat, or .ksplat extension.");
+          return;
+      }
+
+      setViewError(""); // Clear previous errors
+
+      try {
+        const fileReader = new FileReader();
+        fileReader.onload = function(){
+          setViewStatus("Processing file...");
+          // Use setTimeout to allow UI update before potentially blocking parse/load
+          setTimeout(() => {
+              try {
+                runViewer(fileReader.result, format, alphaRemovalThreshold, cameraUpArray, cameraPositionArray, cameraLookAtArray, antialiased, sceneIs2D, sphericalHarmonicsDegree);
+              } catch (e) {
+                console.error(e);
+                setViewError("Could not process scene: " + e.message);
+                setViewStatus("");
+              }
+          }, 10);
+        }
+        fileReader.onerror = function() {
+            setViewError("Error reading file.");
+            setViewStatus("");
+        }
+        setViewStatus("Loading file...");
+        fileReader.readAsArrayBuffer(viewFile.files[0]);
+      } catch (e) {
+        console.error(e);
+        setViewError("Could not load scene: " + e.message);
+        setViewStatus("");
+      }
+    }
+
+    function setViewError(msg) {
+      setViewLoadingIconVisibility(false);
+      document.getElementById("viewStatus").innerHTML = "";
+      document.getElementById("viewError").innerHTML = msg;
+    }
+
+    function setViewStatus(msg) {
+      setViewLoadingIconVisibility(true);
+      document.getElementById("viewError").innerHTML = "";
+      document.getElementById("viewStatus").innerHTML = msg;
+    }
+
+    function setViewLoadingIconVisibility(visible) {
+      document.getElementById('view-loading-icon').style.display = visible ? 'block' : 'none';
+    }
+
+    function runViewer(splatBufferData, format, alphaRemovalThreshold, cameraUpArray, cameraPositionArray, cameraLookAtArray, antialiased, sceneIs2D, sphericalHarmonicsDegree) {
+      const viewerOptions = {
+        'cameraUp': cameraUpArray,
+        'initialCameraPosition': cameraPositionArray,
+        'initialCameraLookAt': cameraLookAtArray,
+        'halfPrecisionCovariancesOnGPU': false, // Keep false for broader compatibility
+        'antialiased': antialiased || false,
+        'splatRenderMode': sceneIs2D ? GaussianSplats3D.SplatRenderMode.TwoD : GaussianSplats3D.SplatRenderMode.ThreeD,
+        'sphericalHarmonicsDegree': sphericalHarmonicsDegree,
+        'sharedMemoryForWorkers': false // Disable shared memory for simpler hosting (no CORS headers needed)
+      };
+      const splatBufferOptions = {
+        'splatAlphaRemovalThreshold': alphaRemovalThreshold
+      };
+
+      // Use the fileBufferToSplatBuffer function defined earlier
+      const splatBufferPromise = fileBufferToSplatBuffer({data: splatBufferData}, format, alphaRemovalThreshold, sphericalHarmonicsDegree);
+
+      splatBufferPromise.then((splatBuffer) => {
+        // Hide the initial UI panel and prepare for viewer
+        document.getElementById("container").style.display = 'none';
+        document.body.style.backgroundColor = "#000000"; // Set background for viewer
+
+        const viewer = new GaussianSplats3D.Viewer(viewerOptions);
+        viewer.addSplatBuffers([splatBuffer], [splatBufferOptions])
+        .then(() => {
+            viewer.start(); // Start the viewer's render loop
+            setViewStatus(""); // Clear status on success
+        })
+        .catch((e) => {
+            console.error("Error adding splat buffers:", e);
+            setViewError("Error displaying scene: " + e.message);
+            // Restore UI if viewer fails
+            document.getElementById("container").style.display = 'flex';
+            document.body.style.backgroundColor = "#CCD5DE";
+        });
+      })
+      .catch((e) => {
+          console.error("Error loading/parsing splat buffer:", e);
+          setViewError("Error processing file: " + e.message);
+          setViewStatus("");
+      });
+    }
+
+  </script>
+</body>
+</html>
