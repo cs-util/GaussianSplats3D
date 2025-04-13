@@ -82,7 +82,7 @@
   <!-- UI Panel -->
   <div id="container"> <!-- Removed flex classes -->
     <div id ="view-panel" class="p-5 text-gray-900 rounded-lg border border-gray-300 w-80 text-center shadow-lg"> <!-- Adjusted width -->
-        <div class="text-lg font-bold text-gray-700 mb-4 block">View a .ply, .ksplat, or .splat file</div>
+        <div class="text-lg font-bold text-gray-700 mb-4 block">View a .ply, .ksplat, .splat, or .spz file</div>
         <table class="w-full text-left mb-4">
             <tbody>
                 <tr>
@@ -198,6 +198,9 @@
       } else if (format === GaussianSplats3D.SceneFormat.KSplat) {
         // KSplatLoader doesn't take SH degree as input
         return GaussianSplats3D.KSplatLoader.loadFromFileData(fileBufferData.data);
+      } else if (format === GaussianSplats3D.SceneFormat.Spz) {
+        // SpzLoader takes SH degree as input
+        return GaussianSplats3D.SpzLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, compressionLevel, optimize, outSphericalHarmonicsDegree, undefined, undefined, undefined, undefined);
       } else {
         return Promise.reject(`Unsupported file format: ${format}`);
       }
@@ -233,7 +236,7 @@
       const format = GaussianSplats3D.LoaderUtils.sceneFormatFromPath(viewFileName);
 
       if (format === undefined) {
-          console.error("Could not determine file format. Ensure file has a .ply, .splat, or .ksplat extension.");
+          console.error("Could not determine file format. Ensure file has a .ply, .splat, .ksplat, or .spz extension.");
           return;
       }
 
