@@ -143,6 +143,12 @@
         const axesHelper = new THREE.AxesHelper( 5 ); // Length of 5 units
         scene.add( axesHelper );
 
+        // Grid Helper
+        const size = 10; // Size of the grid (e.g., 10x10 units)
+        const divisions = 10; // Number of divisions within the grid
+        const gridHelper = new THREE.GridHelper( size, divisions );
+        scene.add( gridHelper );
+
         // Removed Basic Cube
 
         // DropInViewer - Initialize with SH degree 2
