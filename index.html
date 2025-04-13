@@ -101,7 +101,14 @@
                         <span class="text-gray-500 text-xs">(1-255)</span>
                     </td>
                 </tr>
-                <!-- Removed SH level row -->
+                <!-- Added SH level row -->
+                <tr>
+                    <td class="w-2/5 text-right pr-2 py-1">SH level:</td>
+                    <td class="w-3/5 text-left py-1">
+                        <input id="viewSphericalHarmonicsDegree" type="text" class="border border-gray-400 bg-white p-1 rounded-md w-14" value="0">
+                        <span class="text-gray-500 text-xs">(0-2)</span>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -151,11 +158,11 @@
 
         // Removed Basic Cube
 
-        // DropInViewer - Initialize with SH degree 2
+        // DropInViewer - Initialize with SH degree 2 (max) to support loading files up to SH 2
         dropInViewer = new GaussianSplats3D.DropInViewer({
              'sharedMemoryForWorkers': false,
              'gpuAcceleratedSort': false,
-             'sphericalHarmonicsDegree': 2 // Initialize with max SH degree
+             'sphericalHarmonicsDegree': 2 // Initialize with max SH degree support
         });
         scene.add(dropInViewer); // Add viewer to the scene
 
@@ -184,12 +191,11 @@
 
     // --- Splat Loading Logic ---
 
-    // Simplified function assuming optimizeSplatData=false and compressionLevel=0 for direct viewing
-    // Pass fixed SH degree 2 to loaders that support it
-    function fileBufferToSplatBuffer(fileBufferData, format, alphaRemovalThreshold) {
+    // Pass SH degree to loaders that support it
+    function fileBufferToSplatBuffer(fileBufferData, format, alphaRemovalThreshold, outSphericalHarmonicsDegree) {
       const optimize = false;
       const compressionLevel = 0;
-      const outSphericalHarmonicsDegree = 2; // Use fixed SH degree
+      // Use outSphericalHarmonicsDegree passed from UI
       if (format === GaussianSplats3D.SceneFormat.Ply) {
         return GaussianSplats3D.PlyLoader.loadFromFileData(fileBufferData.data, alphaRemovalThreshold, compressionLevel, optimize, outSphericalHarmonicsDegree, undefined, undefined, undefined, undefined);
       } else if (format === GaussianSplats3D.SceneFormat.Splat) {
@@ -223,14 +229,19 @@
       fileNameLabel.innerHTML = url.substring(lastSlash + 1);
 
       const alphaRemovalThreshold = parseInt(document.getElementById("alphaRemovalThresholdView").value);
-      // Removed sphericalHarmonicsDegree input reading
+      // Read sphericalHarmonicsDegree input reading
+      const sphericalHarmonicsDegree = parseInt(document.getElementById("viewSphericalHarmonicsDegree").value);
 
       // Validation
       if (isNaN(alphaRemovalThreshold) || alphaRemovalThreshold < 0 || alphaRemovalThreshold > 255) {
         console.error("Invalid alpha removal threshold (0-255).");
         return;
       }
-      // Removed SH degree validation
+      // Add SH degree validation
+      if (isNaN(sphericalHarmonicsDegree) || sphericalHarmonicsDegree < 0 || sphericalHarmonicsDegree > 2) {
+        console.error("Invalid SH degree (0, 1, or 2).");
+        return;
+      }
 
       const viewFileName = viewFile.files[0].name.trim();
       const format = GaussianSplats3D.LoaderUtils.sceneFormatFromPath(viewFileName);
@@ -246,8 +257,8 @@
           console.log("Processing file...");
           setTimeout(() => { // Keep setTimeout for UI responsiveness during parse
               try {
-                // Pass alpha threshold, SH degree is now fixed or handled by loader
-                const splatBufferPromise = fileBufferToSplatBuffer({data: fileReader.result}, format, alphaRemovalThreshold);
+                // Pass alpha threshold and SH degree
+                const splatBufferPromise = fileBufferToSplatBuffer({data: fileReader.result}, format, alphaRemovalThreshold, sphericalHarmonicsDegree);
 
                 splatBufferPromise.then((splatBuffer) => {
                     // Removed dispose and recreation logic
@@ -255,7 +266,7 @@
                     // Prepare options for adding the buffer
                     const splatBufferOptions = {
                         'splatAlphaRemovalThreshold': alphaRemovalThreshold,
-                        // Add other per-scene options if needed
+                        // SH degree is inherent in the loaded splatBuffer, not needed here
                     };
 
                     // Access the internal viewer and use its addSplatBuffers method
