@@ -348,37 +348,56 @@
     scene.add(markerGroup); // Add the group to the scene
 
     // --- Define materials and geometry for the cross marker ---
-    const crossSize = 0.05; // Overall size of the cross arms
-    const crossThickness = 0.005; // Thickness of the cross arms
-    const crossGeometry = new THREE.BoxGeometry(crossSize, crossThickness, crossThickness);
+    const baseCrossSize = 0.2; // Base size of the cross arms at reference distance
+    const crossThicknessRatio = 0.1; // Thickness relative to size
+    // Geometry will be created dynamically based on scale
+
     const crossMaterialX = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red for X
     const crossMaterialY = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Green for Y
     const crossMaterialZ = new THREE.MeshBasicMaterial({ color: 0x0000ff }); // Blue for Z
 
-    // Function to create a cross marker at the hit position
-    function createCrossMarkerAtPosition(position) {
+    // Function to create a cross marker at the hit position, scaled by distance
+    function createCrossMarkerAtPosition(position, cameraPosition) {
+        const distance = position.distanceTo(cameraPosition);
+        const referenceDistance = 5.0; // Adjust as needed - distance at which base size is used
+        const scaleFactor = (distance / referenceDistance); // Scale proportionally to distance
+
+        const currentCrossSize = baseCrossSize * scaleFactor;
+        const currentCrossThickness = currentCrossSize * crossThicknessRatio;
+
+        // Create geometry with the calculated size
+        const dynamicCrossGeometry = new THREE.BoxGeometry(currentCrossSize, currentCrossThickness, currentCrossThickness);
+
         const crossGroup = new THREE.Group();
 
         // X-axis arm (Red)
-        const crossMeshX = new THREE.Mesh(crossGeometry, crossMaterialX);
-        // No rotation needed as geometry is already aligned with X
+        const crossMeshX = new THREE.Mesh(dynamicCrossGeometry, crossMaterialX);
+        // No rotation needed
 
-        // Y-axis arm (Green)
-        const crossMeshY = new THREE.Mesh(crossGeometry, crossMaterialY);
+        // Y-axis arm (Green) - Use cloned geometry to avoid issues if needed, though BoxGeometry is simple
+        const crossMeshY = new THREE.Mesh(dynamicCrossGeometry.clone(), crossMaterialY);
         crossMeshY.rotation.z = Math.PI / 2; // Rotate 90 degrees around Z
 
         // Z-axis arm (Blue)
-        const crossMeshZ = new THREE.Mesh(crossGeometry, crossMaterialZ);
+        const crossMeshZ = new THREE.Mesh(dynamicCrossGeometry.clone(), crossMaterialZ);
         crossMeshZ.rotation.y = Math.PI / 2; // Rotate 90 degrees around Y
 
         crossGroup.add(crossMeshX);
         crossGroup.add(crossMeshY);
         crossGroup.add(crossMeshZ);
 
+        // No need to scale the group, as geometry size is dynamic
+        // crossGroup.scale.set(scaleFactor, scaleFactor, scaleFactor); // Removed scaling the group
+
         crossGroup.position.copy(position);
         markerGroup.add(crossGroup); // Add to the main marker group
 
-        console.log(`Cross marker added at: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
+        console.log(`Cross marker added at: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)} with scale factor ${scaleFactor.toFixed(2)} (dist: ${distance.toFixed(2)})`);
+
+        // Dispose of dynamic geometry if it's unique per marker to free memory
+        // If geometry is reused or simple, this might be overkill
+        dynamicCrossGeometry.dispose();
+        // Note: Cloned geometries might also need disposal if complex, but BoxGeometry is okay.
     }
 
 
@@ -470,8 +489,8 @@
                     controls.target.copy(hitPosition);
                     controls.update(); // Apply the target change immediately
 
-                    // Create the cross marker at the hit position
-                    createCrossMarkerAtPosition(hitPosition); // Updated function call
+                    // Create the cross marker at the hit position, passing camera position for scaling
+                    createCrossMarkerAtPosition(hitPosition, camera.position); // Pass camera position
 
                 } else {
                     console.log("No splat hit on double-click.");
