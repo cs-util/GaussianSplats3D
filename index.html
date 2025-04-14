@@ -344,21 +344,43 @@
     // --- Click-to-Spawn Sphere Feature ---
 
     // Create a group to hold all marker spheres
-    const sphereGroup = new THREE.Group();
-    scene.add(sphereGroup); // Add the group to the scene
+    const markerGroup = new THREE.Group(); // Renamed from sphereGroup
+    scene.add(markerGroup); // Add the group to the scene
 
-    // Create a material and geometry for the spheres (small and white)
-    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const sphereGeometry = new THREE.SphereGeometry(0.02, 16, 16); // Small sphere
+    // --- Define materials and geometry for the cross marker ---
+    const crossSize = 0.05; // Overall size of the cross arms
+    const crossThickness = 0.005; // Thickness of the cross arms
+    const crossGeometry = new THREE.BoxGeometry(crossSize, crossThickness, crossThickness);
+    const crossMaterialX = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red for X
+    const crossMaterialY = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Green for Y
+    const crossMaterialZ = new THREE.MeshBasicMaterial({ color: 0x0000ff }); // Blue for Z
 
-    // Function to create a sphere at the hit position
-    function createSphereAtPosition(position) {
-      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-      sphere.position.copy(position);
-      sphereGroup.add(sphere);
-      // renderer.render(scene, camera); // Render happens in animate loop
-      console.log(`Sphere added at: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
+    // Function to create a cross marker at the hit position
+    function createCrossMarkerAtPosition(position) {
+        const crossGroup = new THREE.Group();
+
+        // X-axis arm (Red)
+        const crossMeshX = new THREE.Mesh(crossGeometry, crossMaterialX);
+        // No rotation needed as geometry is already aligned with X
+
+        // Y-axis arm (Green)
+        const crossMeshY = new THREE.Mesh(crossGeometry, crossMaterialY);
+        crossMeshY.rotation.z = Math.PI / 2; // Rotate 90 degrees around Z
+
+        // Z-axis arm (Blue)
+        const crossMeshZ = new THREE.Mesh(crossGeometry, crossMaterialZ);
+        crossMeshZ.rotation.y = Math.PI / 2; // Rotate 90 degrees around Y
+
+        crossGroup.add(crossMeshX);
+        crossGroup.add(crossMeshY);
+        crossGroup.add(crossMeshZ);
+
+        crossGroup.position.copy(position);
+        markerGroup.add(crossGroup); // Add to the main marker group
+
+        console.log(`Cross marker added at: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
     }
+
 
     // --- Raycaster Setup and Click Handling ---
     // Remove the local raycaster declaration: const raycaster = new GaussianSplats3D.Raycaster();
@@ -448,8 +470,8 @@
                     controls.target.copy(hitPosition);
                     controls.update(); // Apply the target change immediately
 
-                    // Create the sphere at the hit position
-                    createSphereAtPosition(hitPosition);
+                    // Create the cross marker at the hit position
+                    createCrossMarkerAtPosition(hitPosition); // Updated function call
 
                 } else {
                     console.log("No splat hit on double-click.");
