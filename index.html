@@ -102,6 +102,11 @@
                      </select>
                  </div>
             </div>
+            <!-- Add Rotation Checkbox -->
+            <div class="flex items-center justify-center space-x-1 mt-1">
+                <input type="checkbox" id="rotateSplatCheckbox" class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" checked>
+                <label for="rotateSplatCheckbox" class="ml-2 text-sm text-gray-600">Rotate 180° (X-axis)</label>
+            </div>
         </div>
     </div>
   </div>
@@ -215,6 +220,8 @@
       const alphaRemovalThreshold = parseInt(document.getElementById("alphaRemovalThresholdView").value);
       // Read sphericalHarmonicsDegree input reading from select element
       const sphericalHarmonicsDegree = parseInt(document.getElementById("viewSphericalHarmonicsDegree").value);
+      // Read rotation checkbox state
+      const rotateSplat = document.getElementById("rotateSplatCheckbox").checked;
 
       // Validation
       if (isNaN(alphaRemovalThreshold) || alphaRemovalThreshold < 0 || alphaRemovalThreshold > 255) {
@@ -253,6 +260,13 @@
                     dropInViewer.viewer.addSplatBuffers([splatBuffer], [splatBufferOptions], true, false, false, false) // Changed replaceExisting to false
                         .then(() => {
                             console.log("Splat buffer added via internal viewer.");
+                            // Apply rotation to the Three.js object if checked
+                            if (rotateSplat && dropInViewer.viewer.splatMesh) {
+                                console.log("Applying 180-degree Y rotation to splat mesh...");
+                                // Rotate the splatMesh object directly
+                                dropInViewer.viewer.splatMesh.rotation.x += Math.PI; // Add 180 degrees (PI radians)
+                                console.log("Rotation applied to mesh.");
+                            }
                             // Removed hiding the UI panel
                         })
                         .catch((e) => {
