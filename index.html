@@ -162,8 +162,6 @@
         const gridHelper = new THREE.GridHelper( size, divisions );
         scene.add( gridHelper );
 
-        // Removed Basic Cube
-
         // DropInViewer - Initialize with SH degree 2 (max) to support loading files up to SH 2
         dropInViewer = new GaussianSplats3D.DropInViewer({
              'sharedMemoryForWorkers': false,
@@ -227,7 +225,6 @@
     function animate() {
         requestAnimationFrame(animate);
         controls.update(); // Update controls
-        // dropInViewer.update() is called automatically via onBeforeRender callback
         renderer.render(scene, camera);
     }
 
@@ -295,8 +292,6 @@
                 const splatBufferPromise = fileBufferToSplatBuffer({data: fileReader.result}, format, alphaRemovalThreshold, sphericalHarmonicsDegree);
 
                 splatBufferPromise.then((splatBuffer) => {
-                    // Removed dispose and recreation logic
-
                     // Prepare options for adding the buffer
                     const splatBufferOptions = {
                         'splatAlphaRemovalThreshold': alphaRemovalThreshold,
@@ -315,7 +310,6 @@
                                 dropInViewer.viewer.splatMesh.rotation.x += Math.PI; // Add 180 degrees (PI radians)
                                 console.log("Rotation applied to mesh.");
                             }
-                            // Removed hiding the UI panel
                         })
                         .catch((e) => {
                             console.error("Error adding splat buffer via internal viewer:", e);
@@ -338,8 +332,6 @@
         console.error("Could not load scene: " + e.message);
       }
     }
-
-    // Removed runViewer function
 
     // --- Click-to-Spawn Sphere Feature ---
 
@@ -387,38 +379,20 @@
         crossGroup.add(crossMeshZ);
 
         // No need to scale the group, as geometry size is dynamic
-        // crossGroup.scale.set(scaleFactor, scaleFactor, scaleFactor); // Removed scaling the group
-
         crossGroup.position.copy(position);
         markerGroup.add(crossGroup); // Add to the main marker group
 
         console.log(`Cross marker added at: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)} with scale factor ${scaleFactor.toFixed(2)} (dist: ${distance.toFixed(2)})`);
 
         // Dispose of dynamic geometry if it's unique per marker to free memory
-        // If geometry is reused or simple, this might be overkill
         dynamicCrossGeometry.dispose();
         // Note: Cloned geometries might also need disposal if complex, but BoxGeometry is okay.
     }
 
 
     // --- Raycaster Setup and Click Handling ---
-    // Remove the local raycaster declaration: const raycaster = new GaussianSplats3D.Raycaster();
     const outHits = []; // Array to store intersection results
     const renderDimensions = new THREE.Vector2(); // To store canvas dimensions
-
-    // Variables to detect click vs drag and double-click - REMOVED
-    // let isMouseDown = false;
-    // const mouseDownPosition = new THREE.Vector2();
-    // const mouseUpPosition = new THREE.Vector2();
-    // const clickThreshold = 5; // Max pixels mouse can move to be considered a click
-    // let lastClickTime = 0;
-    // const doubleClickTimeout = 300; // Milliseconds between clicks for double-click
-
-    // REMOVED mousedown listener
-    // renderer.domElement.addEventListener('mousedown', (event) => { ... });
-
-    // REMOVED mouseup listener
-    // renderer.domElement.addEventListener('mouseup', (event) => { ... });
 
     // ADD dblclick listener
     renderer.domElement.addEventListener('dblclick', onDoubleClick, false);
