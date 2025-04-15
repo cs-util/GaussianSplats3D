@@ -406,106 +406,85 @@
     const outHits = []; // Array to store intersection results
     const renderDimensions = new THREE.Vector2(); // To store canvas dimensions
 
-    // Variables to detect click vs drag and double-click
-    let isMouseDown = false;
-    const mouseDownPosition = new THREE.Vector2();
-    const mouseUpPosition = new THREE.Vector2();
-    const clickThreshold = 5; // Max pixels mouse can move to be considered a click
-    let lastClickTime = 0;
-    const doubleClickTimeout = 300; // Milliseconds between clicks for double-click
+    // Variables to detect click vs drag and double-click - REMOVED
+    // let isMouseDown = false;
+    // const mouseDownPosition = new THREE.Vector2();
+    // const mouseUpPosition = new THREE.Vector2();
+    // const clickThreshold = 5; // Max pixels mouse can move to be considered a click
+    // let lastClickTime = 0;
+    // const doubleClickTimeout = 300; // Milliseconds between clicks for double-click
 
-    renderer.domElement.addEventListener('mousedown', (event) => {
-        // Prevent OrbitControls from interfering with double-click detection
-        // by checking if the click is on the UI panel.
+    // REMOVED mousedown listener
+    // renderer.domElement.addEventListener('mousedown', (event) => { ... });
+
+    // REMOVED mouseup listener
+    // renderer.domElement.addEventListener('mouseup', (event) => { ... });
+
+    // ADD dblclick listener
+    renderer.domElement.addEventListener('dblclick', onDoubleClick, false);
+
+    // ADD onDoubleClick function
+    function onDoubleClick(event) {
+        // Prevent default double-click behavior (e.g., text selection)
+        event.preventDefault();
+
+        // Check if the click is on the UI panel.
         const containerRect = document.getElementById('container').getBoundingClientRect();
         if (event.clientX >= containerRect.left && event.clientX <= containerRect.right &&
             event.clientY >= containerRect.top && event.clientY <= containerRect.bottom) {
-            // Click is inside the UI panel, let OrbitControls handle it or UI elements
-            isMouseDown = false; // Ensure mouseup doesn't trigger raycast
+            // Click is inside the UI panel, do nothing here.
             return;
         }
-        isMouseDown = true;
-        mouseDownPosition.set(event.clientX, event.clientY);
-    });
 
-    // No need for mousemove listener if OrbitControls handles dragging
+        console.log("Double-click detected.");
 
-    renderer.domElement.addEventListener('mouseup', (event) => {
-        if (!isMouseDown) return; // Exit if mouseup happened without a preceding mousedown in the canvas
-        isMouseDown = false;
+        // Access the internal raycaster from the viewer instance
+        const internalRaycaster = dropInViewer?.viewer?.raycaster;
 
-        mouseUpPosition.set(event.clientX, event.clientY);
-
-        // Calculate distance moved
-        const distance = mouseDownPosition.distanceTo(mouseUpPosition);
-
-        // Only proceed if it's a click (mouse moved less than threshold)
-        if (distance < clickThreshold) {
-            const currentTime = performance.now();
-            const timeSinceLastClick = currentTime - lastClickTime;
-
-            // Check for double-click
-            if (timeSinceLastClick < doubleClickTimeout) {
-                // Double-click detected
-                console.log("Double-click detected.");
-
-                // Access the internal raycaster from the viewer instance
-                const internalRaycaster = dropInViewer?.viewer?.raycaster;
-
-                if (!internalRaycaster || !dropInViewer.viewer.splatMesh || dropInViewer.viewer.splatMesh.getSplatCount() === 0) {
-                    console.log("No splats loaded, splat mesh not ready, or internal raycaster not found.");
-                    lastClickTime = 0; // Reset last click time after failed attempt
-                    return; // Don't raycast if no splats are loaded or raycaster isn't available
-                }
-
-                // Calculate mouse position for raycasting using the mouseup coordinates
-                const rect = renderer.domElement.getBoundingClientRect();
-                const screenPosition = new THREE.Vector2(
-                    event.clientX - rect.left,
-                    event.clientY - rect.top
-                );
-
-                // Get current render dimensions
-                renderer.getSize(renderDimensions);
-
-                // Reset hits array
-                outHits.length = 0;
-
-                // Set up the raycaster from the camera and mouse position
-                internalRaycaster.setFromCameraAndScreenPosition(camera, screenPosition, renderDimensions);
-
-                // Perform the intersection test against the splat mesh
-                internalRaycaster.intersectSplatMesh(dropInViewer.viewer.splatMesh, outHits);
-
-                // If we hit one or more splats
-                if (outHits.length > 0) {
-                    // The first hit (outHits[0]) is usually the closest one
-                    const hit = outHits[0];
-                    const hitPosition = hit.origin; // hit.origin is the intersection point in world space
-
-                    console.log("Splat hit at:", hitPosition);
-
-                    // Center the camera controls on the hit point
-                    controls.target.copy(hitPosition);
-                    controls.update(); // Apply the target change immediately
-
-                    // Create the cross marker at the hit position, passing camera position for scaling
-                    createCrossMarkerAtPosition(hitPosition, camera.position); // Pass camera position
-
-                } else {
-                    console.log("No splat hit on double-click.");
-                }
-                lastClickTime = 0; // Reset last click time after double-click action
-            } else {
-                // Single click (or first click of a potential double-click)
-                // console.log("Single click detected."); // Optional logging
-                lastClickTime = currentTime; // Record the time of this click
-            }
-        } else {
-            // console.log("Drag detected, not a click."); // Optional: log drag events
-            lastClickTime = 0; // Reset last click time if it was a drag
+        if (!internalRaycaster || !dropInViewer.viewer.splatMesh || dropInViewer.viewer.splatMesh.getSplatCount() === 0) {
+            console.log("No splats loaded, splat mesh not ready, or internal raycaster not found.");
+            return; // Don't raycast if no splats are loaded or raycaster isn't available
         }
-    });
+
+        // Calculate mouse position relative to the canvas
+        const rect = renderer.domElement.getBoundingClientRect();
+        const screenPosition = new THREE.Vector2(
+            event.clientX - rect.left,
+            event.clientY - rect.top
+        );
+
+        // Get current render dimensions
+        renderer.getSize(renderDimensions);
+
+        // Reset hits array
+        outHits.length = 0;
+
+        // Set up the raycaster from the camera and screen position
+        // Note: We use setFromCameraAndScreenPosition for the gaussian-splats-3d raycaster
+        internalRaycaster.setFromCameraAndScreenPosition(camera, screenPosition, renderDimensions);
+
+        // Perform the intersection test against the splat mesh
+        internalRaycaster.intersectSplatMesh(dropInViewer.viewer.splatMesh, outHits);
+
+        // If we hit one or more splats
+        if (outHits.length > 0) {
+            // The first hit (outHits[0]) is usually the closest one
+            const hit = outHits[0];
+            const hitPosition = hit.origin; // hit.origin is the intersection point in world space
+
+            console.log("Splat hit at:", hitPosition);
+
+            // Center the camera controls on the hit point
+            controls.target.copy(hitPosition);
+            controls.update(); // Apply the target change immediately
+
+            // Create the cross marker at the hit position, passing camera position for scaling
+            createCrossMarkerAtPosition(hitPosition, camera.position); // Pass camera position
+
+        } else {
+            console.log("No splat hit on double-click.");
+        }
+    }
 
   </script>
 </body>
